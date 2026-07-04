@@ -401,6 +401,25 @@
 
     const sampleText = "光合作用是绿色植物利用光能，把二氧化碳和水转化成有机物，并释放氧气的过程。光合作用主要发生在叶绿体中，叶绿体中的叶绿素能够吸收光能。这个过程不仅为植物自身制造营养物质，也为其他生物提供食物来源和氧气。影响光合作用的因素包括光照强度、二氧化碳浓度、温度和水分等。在农业生产中，合理密植、增加光照和适当提高二氧化碳浓度，都有助于提高作物产量。";
 
+    const protectedKeywords = [
+      "马克思主义中国化时代化", "马克思主义中国化", "中国化时代化", "马克思主义",
+      "科学社会主义", "中国特色社会主义", "社会主义核心价值观", "社会主义现代化",
+      "毛泽东思想", "邓小平理论", "三个代表", "科学发展观", "习近平新时代中国特色社会主义思想",
+      "中华民族伟大复兴", "中国梦", "理论成果", "历史进程", "落地生根", "深入人心",
+      "唯物史观", "剩余价值学说", "政治经济学", "古典哲学", "空想社会主义",
+      "生产资料公有制", "按劳分配", "无产阶级政党", "生产关系", "经济基础", "上层建筑",
+      "社会基本矛盾", "人民群众", "社会存在", "社会意识", "党的领导", "人民当家作主",
+      "对立统一", "量变质变",
+      "否定之否定", "客观实在性", "主观映像", "爱国主义", "民族精神", "时代精神",
+      "中国精神", "改革创新", "伟大创造精神", "伟大奋斗精神", "伟大团结精神",
+      "伟大梦想精神", "辛亥革命", "君主专制制度", "语言描写", "动作描写",
+      "心理描写", "人物形象", "文章主旨"
+    ];
+
+    function escapeRegExp(text) {
+      return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
     function splitSentences(text) {
       return text
         .replace(/\s+/g, " ")
@@ -410,6 +429,7 @@
     }
 
     function getKeywords(text) {
+      const protectedSet = new Set(protectedKeywords);
       const stopWords = [
         "我们", "你们", "他们", "它们", "这个", "那个", "一种", "一些", "因为", "所以",
         "但是", "然后", "如果", "可以", "进行", "通过", "具有", "以及", "对于", "为了",
@@ -421,13 +441,23 @@
       const counts = {};
       const addWord = (word, weight) => {
         if (!word || stopWords.includes(word)) return;
-        if (word.includes("是") || word.startsWith("的") || word.endsWith("的")) return;
+        let isProtected = protectedSet.has(word);
+        if (!isProtected && word.length >= 3 && word.endsWith("中")) word = word.slice(0, -1);
+        isProtected = protectedSet.has(word);
+        if (!isProtected && word.length === 2 && word.endsWith("中")) return;
+        if (!word || stopWords.includes(word)) return;
+        if (!isProtected && /[的了是和与及或而为把并以]/.test(word)) return;
+        if (!isProtected && /必须|才能|能够|可以|主要|进行|揭示|揭|示|体现|说明|塑造|塑|造|表现|突出|推翻|推|翻|结束|打开/.test(word)) return;
         if (word.endsWith("等")) word = word.slice(0, -1);
         if (!word || stopWords.includes(word)) return;
-        if (word.length > 4 && word.includes("的")) return;
-        if (/^[的了是在和与及或而为把并中上下一二三四五六七八九十]+$/.test(word)) return;
+        if (!isProtected && /^[的了是在和与及或而为把并以中上下一二三四五六七八九十]+$/.test(word)) return;
         counts[word] = (counts[word] || 0) + weight;
       };
+
+      protectedKeywords.forEach(keyword => {
+        const matches = text.match(new RegExp(escapeRegExp(keyword), "g"));
+        if (matches) addWord(keyword, keyword.length * 12 + matches.length * 20);
+      });
 
       const englishWords = text.match(/[a-zA-Z]{3,}/g) || [];
       englishWords.forEach(word => addWord(word.toLowerCase(), 2));
@@ -436,7 +466,7 @@
       Array.from(conceptMatches).forEach(match => addWord(match[1], match[1].length + 4));
 
       const chineseParts = text.match(/[\u4e00-\u9fa5]{2,}/g) || [];
-      const phraseSplitter = /是|指|利用|把|转化成|转化|并|释放|主要|发生在|发生|影响|因素包括|包括|以及|和|与|及|为|中|的|能够|可以|有助于|提高|提供|来源|过程|原因|结果|意义|作用/g;
+      const phraseSplitter = /是|指|利用|通过|把|转化成|转化|并|释放|主要|必须|才能|发生在|发生|影响|因素包括|包括|以及|和|与|及|为|以|的|能够|可以|有助于|提高|提供|来源|过程|原因|结果|意义|作用|揭示|体现|说明|塑造|表现|突出|推翻|结束|打开/g;
       chineseParts.forEach(part => {
         part
           .split(phraseSplitter)
