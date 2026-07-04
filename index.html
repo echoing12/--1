@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>课文/笔记总结生成器</title>
+  <meta name="description" content="学生党复习工具：把课文、课堂笔记或复习资料一键整理成重点总结、知识点、考试可能考的点和练习题。">
+  <meta property="og:title" content="课文/笔记总结生成器">
+  <meta property="og:description" content="粘贴课文或笔记，一键生成复习重点、知识点和练习题。">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Microsoft YaHei", sans-serif;
+      color: #1f2937;
+      background: #f3f6fb;
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 30px 0;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 20px;
+      align-items: end;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      line-height: 1.2;
+      color: #111827;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: #5b677a;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .status {
+      min-width: 150px;
+      color: #364156;
+      background: #ffffff;
+      border: 1px solid #d8e0ec;
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+      font-size: 14px;
+      box-shadow: 0 8px 24px rgba(31, 41, 55, 0.07);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 0.92fr 1.08fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: #ffffff;
+      border: 1px solid #d8e0ec;
+      border-radius: 8px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(31, 41, 55, 0.08);
+    }
+
+    label,
+    .section-title {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    select {
+      width: 100%;
+      border: 1px solid #c7d2e3;
+      border-radius: 8px;
+      padding: 11px 12px;
+      font: inherit;
+      color: #172033;
+      background: #fbfdff;
+      outline: none;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 360px;
+      resize: vertical;
+      border: 1px solid #c7d2e3;
+      border-radius: 8px;
+      padding: 14px;
+      font: inherit;
+      line-height: 1.7;
+      color: #172033;
+      background: #fbfdff;
+      outline: none;
+    }
+
+    textarea:focus,
+    select:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 11px 16px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(31, 41, 55, 0.14);
+    }
+
+    .primary {
+      color: #ffffff;
+      background: #2563eb;
+    }
+
+    .primary:hover {
+      background: #1d4ed8;
+    }
+
+    .secondary {
+      color: #1f2937;
+      background: #e8eef7;
+    }
+
+    .small-btn {
+      padding: 7px 10px;
+      font-size: 13px;
+      color: #1f2937;
+      background: #eef3f9;
+    }
+
+    .output {
+      display: grid;
+      gap: 14px;
+    }
+
+    .result-box {
+      border: 1px solid #d8e0ec;
+      border-radius: 8px;
+      padding: 14px;
+      background: #fbfdff;
+    }
+
+    .result-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .result-box h2 {
+      margin: 0;
+      font-size: 18px;
+      color: #0f172a;
+    }
+
+    .result-box ul,
+    .result-box ol {
+      margin: 0;
+      padding-left: 22px;
+      line-height: 1.75;
+    }
+
+    .result-box p {
+      margin: 0;
+      line-height: 1.75;
+      color: #374151;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .mini-card {
+      border: 1px solid #dce5f1;
+      border-radius: 8px;
+      padding: 12px;
+      background: #ffffff;
+    }
+
+    .mini-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      color: #53627a;
+    }
+
+    .mini-card span {
+      display: block;
+      font-size: 15px;
+      line-height: 1.55;
+      color: #111827;
+    }
+
+    mark {
+      padding: 0 3px;
+      border-radius: 4px;
+      color: #111827;
+      background: #fff1a8;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .tag {
+      border: 1px solid #b8c7da;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 13px;
+      color: #1f3a5f;
+      background: #edf6ff;
+    }
+
+    .hint,
+    .meta {
+      margin-top: 12px;
+      color: #68758a;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .empty {
+      color: #68758a;
+    }
+
+    @media (max-width: 900px) {
+      header,
+      .layout,
+      .field-row,
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        display: block;
+      }
+
+      .status {
+        margin-top: 14px;
+      }
+
+      h1 {
+        font-size: 25px;
+      }
+
+      textarea {
+        min-height: 280px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div>
+        <h1>课文/笔记总结生成器</h1>
+        <p class="subtitle">把课文、课堂笔记或复习资料粘贴进来，一键整理成复习重点、知识点和练习题。</p>
+      </div>
+      <div class="status" id="statusBox">待输入</div>
+    </header>
+
+    <section class="layout">
+      <div class="panel">
+        <div class="field-row">
+          <div>
+            <label for="subjectSelect">学科模式</label>
+            <select id="subjectSelect">
+              <option value="general">通用复习</option>
+              <option value="chinese">语文</option>
+              <option value="history">历史</option>
+              <option value="biology">生物</option>
+              <option value="politics">政治</option>
+            </select>
+          </div>
+          <div>
+            <label for="depthSelect">输出详略</label>
+            <select id="depthSelect">
+              <option value="standard">标准</option>
+              <option value="short">简短</option>
+              <option value="detailed">详细</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="sourceText">输入文字内容</label>
+        <textarea id="sourceText" placeholder="例如：把一段课文、历史笔记、生物知识点、语文阅读材料粘贴到这里……"></textarea>
+        <div class="meta">
+          <span id="wordCount">0 字</span>
+          <span>本地生成，不上传内容</span>
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="generateBtn">生成复习重点</button>
+          <button class="secondary" id="sampleBtn">填入示例</button>
+          <button class="secondary" id="clearBtn">清空</button>
+          <button class="secondary" id="copyBtn">复制全部</button>
+        </div>
+        <p class="hint">建议输入 150 字以上，结果会更稳定。选择学科后，会优先提取该学科常考内容。</p>
+      </div>
+
+      <div class="panel output" id="output">
+        <div class="result-box">
+          <div class="result-head">
+            <h2>复习卡片</h2>
+          </div>
+          <p class="empty">生成后会显示一句话概括、重点总结、知识点和练习题。</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const sourceText = document.getElementById("sourceText");
+    const output = document.getElementById("output");
+    const generateBtn = document.getElementById("generateBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const copyBtn = document.getElementById("copyBtn");
+    const sampleBtn = document.getElementById("sampleBtn");
+    const subjectSelect = document.getElementById("subjectSelect");
+    const depthSelect = document.getElementById("depthSelect");
+    const wordCount = document.getElementById("wordCount");
+    const statusBox = document.getElementById("statusBox");
+
+    const subjectRules = {
+      general: {
+        name: "通用复习",
+        cues: "原因|结果|影响|意义|特点|作用|过程|方法|概念|定义|表现|本质|关系|变化|目的",
+        exam: ["解释核心概念", "概括主要内容", "分析原因和影响", "比较相似知识点"]
+      },
+      chinese: {
+        name: "语文",
+        cues: "中心|主旨|情感|人物|形象|描写|修辞|结构|线索|表达|象征|景物|语言|主题",
+        exam: ["概括文章主旨", "分析人物形象", "赏析修辞或描写", "理解句子含义"]
+      },
+      history: {
+        name: "历史",
+        cues: "时间|人物|事件|背景|原因|经过|结果|影响|意义|制度|改革|战争|朝代|发展",
+        exam: ["梳理事件背景", "分析历史影响", "比较历史事件", "评价人物或制度"]
+      },
+      biology: {
+        name: "生物",
+        cues: "结构|功能|细胞|组织|器官|过程|条件|实验|现象|原理|物质|能量|遗传|生态",
+        exam: ["解释概念和功能", "描述生理过程", "分析实验现象", "区分结构与作用"]
+      },
+      politics: {
+        name: "政治",
+        cues: "观点|原因|意义|做法|原则|制度|权利|义务|责任|价值|发展|国家|社会|人民",
+        exam: ["说明观点依据", "分析意义和原因", "提出具体做法", "联系材料答题"]
+      }
+    };
+
+    const sampleText = "光合作用是绿色植物利用光能，把二氧化碳和水转化成有机物，并释放氧气的过程。光合作用主要发生在叶绿体中，叶绿体中的叶绿素能够吸收光能。这个过程不仅为植物自身制造营养物质，也为其他生物提供食物来源和氧气。影响光合作用的因素包括光照强度、二氧化碳浓度、温度和水分等。在农业生产中，合理密植、增加光照和适当提高二氧化碳浓度，都有助于提高作物产量。";
+
+    function splitSentences(text) {
+      return text
+        .replace(/\s+/g, " ")
+        .split(/(?<=[。！？!?；;])|[\n\r]+/)
+        .map(sentence => sentence.trim())
+        .filter(sentence => sentence.length > 0);
+    }
+
+    function getKeywords(text) {
+      const stopWords = [
+        "我们", "你们", "他们", "它们", "这个", "那个", "一种", "一些", "因为", "所以",
+        "但是", "然后", "如果", "可以", "进行", "通过", "具有", "以及", "对于", "为了",
+        "就是", "没有", "不是", "其中", "主要", "需要", "能够", "时候", "内容", "问题",
+        "一个", "这些", "那些", "不同", "相同", "不断", "已经", "并且", "同时", "包括",
+        "利用", "转化", "释放", "发生", "能够", "提供", "有助于", "相关", "材料"
+      ];
+
+      const counts = {};
+      const addWord = (word, weight) => {
+        if (!word || stopWords.includes(word)) return;
+        if (word.includes("是") || word.startsWith("的") || word.endsWith("的")) return;
+        if (word.endsWith("等")) word = word.slice(0, -1);
+        if (!word || stopWords.includes(word)) return;
+        if (word.length > 4 && word.includes("的")) return;
+        if (/^[的了是在和与及或而为把并中上下一二三四五六七八九十]+$/.test(word)) return;
+        counts[word] = (counts[word] || 0) + weight;
+      };
+
+      const englishWords = text.match(/[a-zA-Z]{3,}/g) || [];
+      englishWords.forEach(word => addWord(word.toLowerCase(), 2));
+
+      const conceptMatches = text.matchAll(/(?:^|[。！？；;，,、\s])([\u4e00-\u9fa5]{2,8})(?=是|指|包括|具有|能够|可以|主要)/g);
+      Array.from(conceptMatches).forEach(match => addWord(match[1], match[1].length + 4));
+
+      const chineseParts = text.match(/[\u4e00-\u9fa5]{2,}/g) || [];
+      const phraseSplitter = /是|指|利用|把|转化成|转化|并|释放|主要|发生在|发生|影响|因素包括|包括|以及|和|与|及|为|中|的|能够|可以|有助于|提高|提供|来源|过程|原因|结果|意义|作用/g;
+      chineseParts.forEach(part => {
+        part
+          .split(phraseSplitter)
+          .map(word => word.trim())
+          .filter(word => word.length >= 2 && word.length <= 6)
+          .forEach(word => addWord(word, word.length + 3));
+      });
+
+      const ngramCounts = {};
+      chineseParts.forEach(part => {
+        for (let length = 2; length <= 4; length++) {
+          for (let i = 0; i <= part.length - length; i++) {
+            const word = part.slice(i, i + length);
+            ngramCounts[word] = (ngramCounts[word] || 0) + 1;
+          }
+        }
+      });
+      Object.entries(ngramCounts).forEach(([word, count]) => {
+        if (count > 1) addWord(word, count * word.length);
+      });
+
+      return Object.entries(counts)
+        .sort((a, b) => b[1] - a[1] || b[0].length - a[0].length)
+        .filter(([word], index, list) => {
+          return !list
+            .slice(0, index)
+            .some(([betterWord]) => betterWord.includes(word) && betterWord.length > word.length);
+        })
+        .slice(0, 10)
+        .map(item => item[0]);
+    }
+
+    function scoreSentence(sentence, keywords, index, subject) {
+      const rule = subjectRules[subject];
+      let score = 0;
+
+      keywords.forEach(keyword => {
+        if (sentence.includes(keyword)) score += 3;
+      });
+
+      if (new RegExp(rule.cues).test(sentence)) score += 4;
+      if (/首先|其次|最后|总之|因此|说明|体现|表明|可见|由此/.test(sentence)) score += 1;
+      if (index < 2) score += 1;
+      if (sentence.length > 24 && sentence.length < 130) score += 1;
+      return score;
+    }
+
+    function pickImportantSentences(sentences, keywords, count, subject) {
+      return sentences
+        .map((sentence, index) => ({
+          sentence,
+          index,
+          score: scoreSentence(sentence, keywords, index, subject)
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, count)
+        .sort((a, b) => a.index - b.index)
+        .map(item => item.sentence);
+    }
+
+    function cleanSentence(sentence) {
+      return sentence.replace(/[。！？!?；;]$/, "");
+    }
+
+    function makeKnowledgePoints(sentences, keywords, limit) {
+      const points = [];
+      const used = new Set();
+
+      keywords.forEach(keyword => {
+        const related = sentences.find(sentence => sentence.includes(keyword));
+        if (related && !used.has(keyword)) {
+          used.add(keyword);
+          points.push(keyword + "：" + cleanSentence(related));
+        }
+      });
+
+      return points.slice(0, limit);
+    }
+
+    function makeExamPoints(keywords, importantSentences, subject, limit) {
+      const rule = subjectRules[subject];
+      const examPoints = [];
+
+      rule.exam.forEach(item => {
+        const keyword = keywords[examPoints.length] || "材料";
+        examPoints.push(item + "：“" + keyword + "”相关内容。");
+      });
+
+      importantSentences.slice(0, 3).forEach(sentence => {
+        examPoints.push("结合材料分析：" + cleanSentence(sentence));
+      });
+
+      return examPoints.slice(0, limit);
+    }
+
+    function makePracticeQuestions(keywords, importantSentences, subject, limit) {
+      const first = keywords[0] || "核心概念";
+      const second = keywords[1] || "相关内容";
+      const keySentence = importantSentences[0] ? cleanSentence(importantSentences[0]) : "材料中的重点内容";
+      const subjectName = subjectRules[subject].name;
+      const questions = [
+        "填空题：" + first + " 是本段材料中的重要知识点。",
+        "判断题：" + keySentence + "。（请判断并说明理由）",
+        "简答题：请用自己的话概括“" + first + "”和“" + second + "”的关系。",
+        "材料题：从" + subjectName + "角度分析这段内容可能说明了什么。"
+      ];
+
+      return questions.slice(0, limit);
+    }
+
+    function escapeHtml(text) {
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function highlightKeywords(text, keywords) {
+      let safe = escapeHtml(text);
+      keywords.slice(0, 5).forEach(keyword => {
+        const escaped = escapeHtml(keyword);
+        safe = safe.replaceAll(escaped, "<mark>" + escaped + "</mark>");
+      });
+      return safe;
+    }
+
+    function renderList(items, ordered) {
+      if (items.length === 0) {
+        return '<p class="empty">暂时没有提取到内容，请输入更完整的文字。</p>';
+      }
+
+      const tag = ordered ? "ol" : "ul";
+      return "<" + tag + ">" + items.map(item => "<li>" + escapeHtml(item) + "</li>").join("") + "</" + tag + ">";
+    }
+
+    function renderBox(title, bodyHtml, copyKey) {
+      return `
+        <div class="result-box" data-copy-key="${copyKey}">
+          <div class="result-head">
+            <h2>${title}</h2>
+            <button class="small-btn" data-copy="${copyKey}">复制</button>
+          </div>
+          <div class="copy-body">${bodyHtml}</div>
+        </div>
+      `;
+    }
+
+    function getLimits(depth) {
+      if (depth === "short") return { summary: 3, knowledge: 4, exam: 4, practice: 3 };
+      if (depth === "detailed") return { summary: 6, knowledge: 8, exam: 7, practice: 5 };
+      return { summary: 4, knowledge: 6, exam: 6, practice: 4 };
+    }
+
+    function generateSummary() {
+      const text = sourceText.value.trim();
+      const subject = subjectSelect.value;
+      const depth = depthSelect.value;
+      const limits = getLimits(depth);
+
+      if (!text) {
+        alert("请先输入一段课文或笔记内容。");
+        sourceText.focus();
+        return;
+      }
+
+      const sentences = splitSentences(text);
+      const keywords = getKeywords(text);
+      const importantSentences = pickImportantSentences(sentences, keywords, limits.summary, subject);
+      const knowledgePoints = makeKnowledgePoints(sentences, keywords, limits.knowledge);
+      const examPoints = makeExamPoints(keywords, importantSentences, subject, limits.exam);
+      const practiceQuestions = makePracticeQuestions(keywords, importantSentences, subject, limits.practice);
+      const oneLine = importantSentences[0]
+        ? cleanSentence(importantSentences[0])
+        : text.slice(0, 80) + (text.length > 80 ? "……" : "");
+      const summary = importantSentences.length
+        ? importantSentences.join("")
+        : text.slice(0, 180) + (text.length > 180 ? "……" : "");
+
+      const cardHtml = `
+        <div class="summary-grid">
+          <div class="mini-card"><strong>一句话概括</strong><span>${highlightKeywords(oneLine, keywords)}</span></div>
+          <div class="mini-card"><strong>学科模式</strong><span>${subjectRules[subject].name}</span></div>
+          <div class="mini-card"><strong>复习关键词</strong><span>${keywords.slice(0, 4).map(escapeHtml).join("、") || "暂无"}</span></div>
+        </div>
+        <div class="tag-list">${keywords.slice(0, 8).map(keyword => '<span class="tag">' + escapeHtml(keyword) + '</span>').join("")}</div>
+      `;
+
+      output.innerHTML =
+        renderBox("复习卡片", cardHtml, "card") +
+        renderBox("重点总结", "<p>" + highlightKeywords(summary, keywords) + "</p>", "summary") +
+        renderBox("知识点列表", renderList(knowledgePoints, false), "knowledge") +
+        renderBox("考试可能考的点", renderList(examPoints, false), "exam") +
+        renderBox("练习题", renderList(practiceQuestions, true), "practice");
+
+      statusBox.textContent = "已生成";
+    }
+
+    function resetOutput() {
+      output.innerHTML = `
+        <div class="result-box">
+          <div class="result-head">
+            <h2>复习卡片</h2>
+          </div>
+          <p class="empty">生成后会显示一句话概括、重点总结、知识点和练习题。</p>
+        </div>
+      `;
+    }
+
+    function clearAll() {
+      sourceText.value = "";
+      resetOutput();
+      updateWordCount();
+      statusBox.textContent = "待输入";
+      sourceText.focus();
+    }
+
+    function fillSample() {
+      sourceText.value = sampleText;
+      subjectSelect.value = "biology";
+      updateWordCount();
+      generateSummary();
+    }
+
+    function getCopyText(copyKey) {
+      if (copyKey === "all") return output.innerText.trim();
+      const box = output.querySelector('[data-copy-key="' + copyKey + '"] .copy-body');
+      return box ? box.innerText.trim() : "";
+    }
+
+    async function copyText(copyKey) {
+      const text = getCopyText(copyKey);
+
+      if (!text || text.includes("生成后会显示")) {
+        alert("请先生成复习重点。");
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(text);
+        alert("已复制。");
+      } catch (error) {
+        alert("复制失败，可以手动选中输出区域复制。");
+      }
+    }
+
+    function updateWordCount() {
+      const count = sourceText.value.replace(/\s/g, "").length;
+      wordCount.textContent = count + " 字";
+      statusBox.textContent = count > 0 ? "正在编辑" : "待输入";
+    }
+
+    generateBtn.addEventListener("click", generateSummary);
+    clearBtn.addEventListener("click", clearAll);
+    sampleBtn.addEventListener("click", fillSample);
+    copyBtn.addEventListener("click", () => copyText("all"));
+    sourceText.addEventListener("input", updateWordCount);
+    output.addEventListener("click", event => {
+      const button = event.target.closest("[data-copy]");
+      if (button) copyText(button.dataset.copy);
+    });
+  </script>
+</body>
+</html>
